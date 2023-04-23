@@ -19,12 +19,31 @@ class layer_dense:
     # Forward pass
     def forward(self,inputs):
         self.output = np.dot(inputs, self.weights) + self.biases
+        self.inputs = inputs
+        
+    # Backward pass
+    def backward(self, dvalues):
+        # Gradients on parameters
+        self.dweights = np.dot(self.inputs.T, dvalues)
+        self.dbiases = np.sum(dvalues, axis=0, keepdims=True)
+        # Gradient on values
+        self.dinputs = np.dot(dvalues, self.weights.T)
         
 # ReLU activation function
 class activation_relu:
     
     def forward(self, inputs):
+        self.inputs = inputs
         self.output = np.maximum(0, inputs)
+        
+    # Backward pass
+    def backward(self, dvalues):
+        # Since we need to modify the original variable,
+        # let's make a copy of the values first
+        self.dinputs = dvalues.copy()
+        
+        # Zero gradient where input values were negative
+        self.dinputs[self.inputs <= 0] = 0
         
 class activation_softmax:
     
@@ -51,14 +70,14 @@ class loss:
         
         # Calc mean loss
         data_loss = np.mean(sample_losses)
-        
+
         return data_loss
     
 class loss_categoricalCrossentropy(loss):
     
     # Forward pass
-    def foward(self, y_pred, y_true):
-        
+    def forward(self, y_pred, y_true):
+
         #Number of samples in a batch
         samples = len(y_pred)
         
@@ -70,13 +89,36 @@ class loss_categoricalCrossentropy(loss):
         # only if categorical labels
         if len(y_true.shape) == 1:
             correct_confidences = y_pred_clipped[
-                range(samples), y_pred]
+                range(samples), 
+                y_true]
         # Mask values - only for one-hot encoded lables
         elif len(y_true.shape) == 2:
             correct_confidences = np.sum(y_pred_clipped*y_true, axis=1)
             
         # Losses
         negativ_log_likelihoods = -np.log(correct_confidences)
+        
         return negativ_log_likelihoods
+        
+    # Backward pass    
+    def backward(self, dvalues, y_true):
+        
+        # Number of samples
+        samples = len(dvalues)
+        # Number of labels in every sample
+        # We will use the first sample to count them
+        labels = len(dvalues[0])
+        
+        # If labels are sparse , turn them into one-hot vector
+        if len(y_true.shape) == 1:
+            y_true = np.eye(labels)[y_true]
+            
+        # Calculate gradient
+        self.dinputs = - y_true / dvalues
+        # Normalize gradient
+        self.dinputs = self.dinputs / samples
+        
+
+    
         
         
