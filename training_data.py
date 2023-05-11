@@ -24,6 +24,8 @@ activation1 = activation_relu()
 # Create second dense layer with 3 inputs (out of dense1)
 dense2 = layer_dense(3, 3)
 
+# 
+
 # Create softmax activation to be used with dense layer
 activation2 = activation_softmax()
 
@@ -49,6 +51,11 @@ print(activation2.output[:5])
 # it takes the output of second dense layer here and returns loss
 loss = loss_function.calculate(activation2.output, y)
 print("Loss: ", loss)
+
+# Calculate accuracy from output of activation2 and targets
+# calculation values along first axis
+predictions = np.argmax(loss_activation.output, y)
+
 
 
 
